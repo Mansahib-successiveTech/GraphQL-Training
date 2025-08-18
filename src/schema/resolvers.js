@@ -4,7 +4,14 @@ import { messageModule } from "../modules/message/index.js";
 export const resolvers = {
     Query: {
         ...messageModule.Query,
-        ...blogModule.Query
+        ...blogModule.Query,
+        user: (_, { id }) => {
+            const user = users.find(user => user.id === id);
+            if (!user) {
+                return { code: 404, message: "User not found" };
+            }
+            return user;
+        }
     },
     Mutation: {
         ...messageModule.Mutation,
@@ -19,5 +26,22 @@ export const resolvers = {
     },
     Comment: {
         ...blogModule.Comment
+    },
+    QueryResult: {
+        __resolveType(obj) {
+            if (obj.code) {
+                return "Error";
+            }
+            if (obj.name) {
+                return "User";
+            }
+            if (obj.title) {
+                return "Post";
+            }
+            if (obj.text) {
+                return "Comment";
+            }
+            return null;
+        }
     }
 };

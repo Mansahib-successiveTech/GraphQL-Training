@@ -1,4 +1,3 @@
-
 type User {
   id: ID!
   name: String!
@@ -20,3 +19,10 @@ type Comment {
   post: Post!
   author: User!
 }
+
+type Error {
+  code: Int!
+  message: String!
+}
+
+union QueryResult = User | Post | Comment | Error
