@@ -20,9 +20,3 @@ type Comment {
   author: User!
 }
 
-type Error {
-  code: Int!
-  message: String!
-}
-
-union QueryResult = User | Post | Comment | Error

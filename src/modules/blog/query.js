@@ -1,13 +1,57 @@
 import { users, posts, comments } from "./dataSource.js";
+
 export const blogResolvers = {
   Query: {
-    users: () => users,
-    user: (_, args) => users.find((user) => user.id === args.id),
-    posts: () => posts,
-    post: (_, args) => posts.find((post) => post.id === args.id),
-    comments: () => comments,
-    comment: (_, args) => comments.find((comment) => comment.id === args.id),
+    users: () => {
+      if (!users || users.length === 0) {
+        return { code: 404, message: "No users found" };
+      }
+      return users;
+    },
+
+    user: (_, { id }) => {
+      const user = users.find((u) => u.id === id);
+      if (!user) {
+        return { code: 404, message: `User with id ${id} not found` };
+      }
+      return user;
+    },
+
+    posts: () => {
+      if (!posts || posts.length === 0) {
+        return { code: 404, message: "No posts found" };
+      }
+      return posts;
+    },
+
+    post: (_, { id }) => {
+      const post = posts.find((p) => p.id === id);
+      if (!post) {
+        return { code: 404, message: `Post with id ${id} not found` };
+      }
+      return post;
+    },
+
+    comments: () => {
+      if (!comments || comments.length === 0) {
+        return { code: 404, message: "No comments found" };
+      }
+      return comments;
+    },
+
+    comment: (_, { id }) => {
+      const comment = comments.find((c) => c.id === id);
+      if (!comment) {
+        return { code: 404, message: `Comment with id ${id} not found` };
+      }
+      return comment;
+    },
+
     paginatedPosts: (_, { page, limit, sortBy = "id", order = "asc" }) => {
+      if (!posts || posts.length === 0) {
+        return { code: 404, message: "No posts available for pagination" };
+      }
+
       let sortedPosts = [...posts];
 
       // Sorting logic
@@ -23,8 +67,13 @@ export const blogResolvers = {
       // Pagination logic
       const startIndex = (page - 1) * limit;
       const endIndex = startIndex + limit;
+      const sliced = sortedPosts.slice(startIndex, endIndex);
 
-      return sortedPosts.slice(startIndex, endIndex);
+      if (sliced.length === 0) {
+        return { code: 404, message: "No posts found for this page" };
+      }
+
+      return sliced;
     },
   },
 
