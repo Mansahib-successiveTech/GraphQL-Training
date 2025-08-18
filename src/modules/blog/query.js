@@ -7,6 +7,25 @@ export const blogResolvers = {
     post: (_, args) => posts.find((post) => post.id === args.id),
     comments: () => comments,
     comment: (_, args) => comments.find((comment) => comment.id === args.id),
+    paginatedPosts: (_, { page, limit, sortBy = "id", order = "asc" }) => {
+      let sortedPosts = [...posts];
+
+      // Sorting logic
+      if (sortBy) {
+        sortedPosts.sort((a, b) => {
+          if (order === "desc") {
+            return b[sortBy] > a[sortBy] ? 1 : -1;
+          }
+          return a[sortBy] > b[sortBy] ? 1 : -1;
+        });
+      }
+
+      // Pagination logic
+      const startIndex = (page - 1) * limit;
+      const endIndex = startIndex + limit;
+
+      return sortedPosts.slice(startIndex, endIndex);
+    },
   },
 
   User: {

@@ -7,7 +7,8 @@ export const resolvers = {
         ...blogModule.Query
     },
     Mutation: {
-        ...messageModule.Mutation
+        ...messageModule.Mutation,
+        ...blogModule.Mutation,
     },
     // Add type resolvers so nested fields work
     User: {
