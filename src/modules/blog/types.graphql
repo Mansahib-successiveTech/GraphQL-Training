@@ -1,9 +1,10 @@
-
 type User {
   id: ID!
   name: String!
   email: String!
   posts: [Post!]
+  password:String!
+  isOnline: Boolean! 
 }
 
 type Post {
@@ -20,3 +21,4 @@ type Comment {
   post: Post!
   author: User!
 }
+
