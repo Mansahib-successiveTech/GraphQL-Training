@@ -19,6 +19,7 @@ export const blogMutationResolvers = {
   },
 
   addPost: (_, { title, content, authorId }, context) => {
+    console.log(context.user);
     if (!context.user) {
       throw new Error("Authentication required");
     }
@@ -57,12 +58,39 @@ export const blogMutationResolvers = {
     users.push(newUser);
     return newUser;
   },
-  login: (_, { email, password }) => {
+  login: (_, { email, password }, { pubsub }) => {
     const user = users.find((u) => u.email === email && u.password === password);
     if (!user) throw new Error("Invalid credentials");
 
-    return jwt.sign({ id: user.id, email: user.email }, "secretkey", {
-      expiresIn: "1h",
+    // set presence
+    user.isOnline = true;
+
+    // publish event for subscriptions
+    pubsub.publish("USER_PRESENCE_CHANGED", {
+      userPresenceChanged: user,
     });
+    const token=jwt.sign({ id: user.id, email: user.email }, "secretkey", {
+        expiresIn: "1h",
+      })
+    return {
+      token,
+      user,
+    };
+  },
+ logout: (_, __, { pubsub,user }) => {
+  console.log(user);
+    if (!user) throw new Error("Not authenticated");
+
+    const existingUser = users.find((u) => u.id === user.id);
+    if (!existingUser) throw new Error("User not found");
+
+    existingUser.isOnline = false;
+
+    // publish event for subscriptions
+    pubsub.publish("USER_PRESENCE_CHANGED", {
+      userPresenceChanged: existingUser,
+    });
+
+    return { message: "Logged out" };
   },
 };
