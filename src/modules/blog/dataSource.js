@@ -1,6 +1,6 @@
 export let users = [
-  { id: "1", name: "Mansahib Singh", email: "mansahib@example.com" },
-  { id: "2", name: "John Doe", email: "john@example.com" }
+  { id: "1", name: "Mansahib Singh", email: "mansahib@example.com",password:"123",isOnline: false },
+  { id: "2", name: "John Doe", email: "john@example.com",password:"1234",isOnline: false }
 ];
 
 export let posts = [
