@@ -15,10 +15,11 @@
 // });
 
 // console.log(`🚀 Server ready at ${url}`);
+import { connectionDb } from "./src/db/db.js";
 import { createApolloServer } from "./src/server/express.js";
 
 const httpServer = await createApolloServer(4000);
-
+await connectionDb();
 httpServer.listen(4000, () => {
   console.log(`🚀 Query/Mutation endpoint: http://localhost:4000/graphql`);
 });
