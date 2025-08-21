@@ -14,6 +14,7 @@ type Query {
   post(id: ID!): QueryResult
   comments: [Comment!]!
   comment(id: ID!): QueryResult
+  messageHistory: [Message!]!
   paginatedPosts(
     page: Int!
     limit: Int!
@@ -28,4 +29,10 @@ type Mutation {
   deleteComment(id: ID!): Comment
   addPost(title: String!, content: String!, authorId: ID!): Post
   addComment(text: String!, postId: ID!, authorId: ID!): Comment
+  register(name: String!, email: String!, password: String!): User!  
+  login(email: String!, password: String!): String!  
+}
+type Subscription {
+  messagePosted: Message!,
+  commentPosted: Comment!
 }
