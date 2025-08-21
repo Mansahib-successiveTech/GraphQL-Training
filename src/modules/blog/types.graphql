@@ -4,6 +4,7 @@ type User {
   email: String!
   posts: [Post!]
   password:String!
+  isOnline: Boolean! 
 }
 
 type Post {

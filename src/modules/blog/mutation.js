@@ -87,16 +87,47 @@ export const blogMutationResolvers = {
     await newUser.save();
     return newUser;
   },
-
-  //  Login user + JWT
-  login: async (_, { email, password }) => {
-    const user = await User.findOne({ email, password }); 
+   // Login user + JWT
+  login: async (_, { email, password }, { pubsub }) => {
+    const user = await User.findOne({ email, password });
     if (!user) throw new Error("Invalid credentials");
 
-    return jwt.sign(
-      { id: user._id },
+    // mark as online
+    user.isOnline = true;
+    await user.save();
+
+    // notify subscribers
+    pubsub.publish("USER_PRESENCE_CHANGED", {
+      userPresenceChanged: user,
+    });
+
+    const token = jwt.sign(
+      { id: user._id, email: user.email },
       "secretkey",
-      { expiresIn: "3h" }
+      { expiresIn: "1h" }
     );
+
+    return {
+      token,
+      user,
+    };
+  },
+
+  // Logout user
+  logout: async (_, __, { pubsub, user }) => {
+    if (!user) throw new Error("Not authenticated");
+
+    const existingUser = await User.findById(user.id);
+    if (!existingUser) throw new Error("User not found");
+
+    existingUser.isOnline = false;
+    await existingUser.save();
+
+    // publish event for subscriptions
+    pubsub.publish("USER_PRESENCE_CHANGED", {
+      userPresenceChanged: existingUser,
+    });
+
+    return { message: "Logged out" };
   },
 };

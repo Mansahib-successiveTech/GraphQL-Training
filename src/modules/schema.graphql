@@ -22,7 +22,10 @@ type Query {
     order: String
   ): [Post!]
 }
-
+type AuthPayload {
+  token: String!
+  user: User!
+}
 type Mutation {
   postMessage(content: String!, author: String!): Message!
   updateUser(id: ID!, name: String, email: String): User
@@ -30,9 +33,14 @@ type Mutation {
   addPost(title: String!, content: String!, authorId: ID!): Post
   addComment(text: String!, postId: ID!, authorId: ID!): Comment
   register(name: String!, email: String!, password: String!): User!  
-  login(email: String!, password: String!): String!  
+  login(email: String!, password: String!): AuthPayload! 
+  logout: LogoutResponse!
+}
+type LogoutResponse {
+  message: String!
 }
 type Subscription {
   messagePosted: Message!,
-  commentPosted: Comment!
+  commentPosted: Comment!,
+  userPresenceChanged: User! 
 }
