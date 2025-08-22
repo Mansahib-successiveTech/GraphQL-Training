@@ -7,7 +7,7 @@ import { resolvers } from "./src/schema/resolvers.js";
 const server = new ApolloServer({
   typeDefs,
   resolvers,
-//  plugins: [ApolloServerPluginLandingPageLocalDefault()],  //no need for this
+  plugins: [ApolloServerPluginLandingPageLocalDefault()],  //no need for this
 });
 
 const { url } = await startStandaloneServer(server, {

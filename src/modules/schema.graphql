@@ -1,13 +1,31 @@
+type Error {
+  code: Int!
+  message: String!
+}
+
+union QueryResult = User | Post | Comment | Error
+
+
 type Query {
   messages: [Message!]!
   users: [User!]!
-  user(id: ID!): User
+  user(id: ID!): QueryResult
   posts: [Post!]!
-  post(id: ID!): Post
+  post(id: ID!): QueryResult
   comments: [Comment!]!
-  comment(id: ID!): Comment
+  comment(id: ID!): QueryResult
+  paginatedPosts(
+    page: Int!
+    limit: Int!
+    sortBy: String
+    order: String
+  ): [Post!]
 }
 
 type Mutation {
   postMessage(content: String!, author: String!): Message!
+  updateUser(id: ID!, name: String, email: String): User
+  deleteComment(id: ID!): Comment
+  addPost(title: String!, content: String!, authorId: ID!): Post
+  addComment(text: String!, postId: ID!, authorId: ID!): Comment
 }

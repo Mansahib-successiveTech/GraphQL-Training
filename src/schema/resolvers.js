@@ -4,10 +4,11 @@ import { messageModule } from "../modules/message/index.js";
 export const resolvers = {
     Query: {
         ...messageModule.Query,
-        ...blogModule.Query
+        ...blogModule.Query,
     },
     Mutation: {
-        ...messageModule.Mutation
+        ...messageModule.Mutation,
+        ...blogModule.Mutation,
     },
     // Add type resolvers so nested fields work
     User: {
@@ -18,5 +19,23 @@ export const resolvers = {
     },
     Comment: {
         ...blogModule.Comment
+    },
+    QueryResult: {
+    __resolveType(obj) {
+      if (obj.name && obj.email) {
+        return "User";
+      }
+      if (obj.title && obj.content) {
+        return "Post";
+      }
+      if (obj.text && obj.postId) {
+        return "Comment";
+      }
+      if (obj.code && obj.message) {
+        return "Error";
+      }
+      return null; // GraphQL will throw if it can't resolve
+    },
+
     }
 };
