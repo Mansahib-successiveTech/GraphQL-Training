@@ -4,3 +4,4 @@ type Message {
   author: String!
   createdAt: String!
 }
+

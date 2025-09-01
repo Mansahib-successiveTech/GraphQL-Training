@@ -10,6 +10,10 @@ export const resolvers = {
         ...messageModule.Mutation,
         ...blogModule.Mutation,
     },
+    Subscription: {
+        ...messageModule.Subscription,
+        ...blogModule.Subscription,
+      },
     // Add type resolvers so nested fields work
     User: {
         ...blogModule.User
@@ -37,5 +41,6 @@ export const resolvers = {
       return null; // GraphQL will throw if it can't resolve
     },
 
-    }
+    },
+    
 };
