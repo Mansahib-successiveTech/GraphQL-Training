@@ -1,94 +1,79 @@
-import { users, posts, comments } from "./dataSource.js";
+import { Post } from "../../models/postModel.js";
+import { User } from "../../models/userModel.js";
+import { Comment } from "../../models/commentModel.js";
+
 
 export const blogResolvers = {
   Query: {
-    users: () => {
-      if (!users || users.length === 0) {
-        return { code: 404, message: "No users found" };
-      }
+    users: async () => {
+      const users = await User.find().populate("posts");
+      if (!users.length) return { code: 404, message: "No users found" };
       return users;
     },
 
-    user: (_, { id }) => {
-      const user = users.find((u) => u.id === id);
-      if (!user) {
-        return { code: 404, message: `User with id ${id} not found` };
-      }
+    user: async (_, { id }) => {
+      const user = await User.findById(id).populate("posts");
+      if (!user) return { code: 404, message: `User with id ${id} not found` };
       return user;
     },
 
-    posts: () => {
-      if (!posts || posts.length === 0) {
-        return { code: 404, message: "No posts found" };
-      }
+    posts: async () => {
+      const posts = await Post.find().populate("author").populate("comments");
+      if (!posts.length) return { code: 404, message: "No posts found" };
       return posts;
     },
 
-    post: (_, { id }) => {
-      const post = posts.find((p) => p.id === id);
-      if (!post) {
-        return { code: 404, message: `Post with id ${id} not found` };
-      }
+    post: async (_, { id }) => {
+      const post = await Post.findById(id)
+        .populate("author")
+        .populate("comments");
+      if (!post) return { code: 404, message: `Post with id ${id} not found` };
       return post;
     },
 
-    comments: () => {
-      if (!comments || comments.length === 0) {
-        return { code: 404, message: "No comments found" };
-      }
+    comments: async () => {
+      const comments = await Comment.find().populate("author").populate("post");
+      if (!comments.length) return { code: 404, message: "No comments found" };
       return comments;
     },
 
-    comment: (_, { id }) => {
-      const comment = comments.find((c) => c.id === id);
-      if (!comment) {
+    comment: async (_, { id }) => {
+      const comment = await Comment.findById(id)
+        .populate("author")
+        .populate("post");
+      if (!comment)
         return { code: 404, message: `Comment with id ${id} not found` };
-      }
       return comment;
     },
 
-    paginatedPosts: (_, { page, limit, sortBy = "id", order = "asc" }) => {
-      if (!posts || posts.length === 0) {
-        return { code: 404, message: "No posts available for pagination" };
-      }
+    paginatedPosts: async (_, { page, limit, sortBy = "createdAt", order = "asc" }) => {
+      const sortOrder = order === "desc" ? -1 : 1;
 
-      let sortedPosts = [...posts];
+      const posts = await Post.find()
+        .sort({ [sortBy]: sortOrder })
+        .skip((page - 1) * limit)
+        .limit(limit)
+        .populate("author")
+        .populate("comments");
 
-      // Sorting logic
-      if (sortBy) {
-        sortedPosts.sort((a, b) => {
-          if (order === "desc") {
-            return b[sortBy] > a[sortBy] ? 1 : -1;
-          }
-          return a[sortBy] > b[sortBy] ? 1 : -1;
-        });
-      }
-
-      // Pagination logic
-      const startIndex = (page - 1) * limit;
-      const endIndex = startIndex + limit;
-      const sliced = sortedPosts.slice(startIndex, endIndex);
-
-      if (sliced.length === 0) {
+      if (!posts.length)
         return { code: 404, message: "No posts found for this page" };
-      }
-
-      return sliced;
+      return posts;
     },
   },
 
+  // Nested resolvers are mostly handled by `populate`, but you can keep them:
   User: {
-    posts: (parent) => posts.filter((post) => post.authorId === parent.id),
+    posts: async (parent) => Post.find({ author: parent._id }),
   },
 
   Post: {
-    author: (parent) => users.find((user) => user.id === parent.authorId),
-    comments: (parent) =>
-      comments.filter((comment) => comment.postId === parent.id),
+    author: async (parent) => User.findById(parent.author),
+    comments: async (parent) => Comment.find({ post: parent._id }),
   },
 
   Comment: {
-    author: (parent) => users.find((user) => user.id === parent.authorId),
-    post: (parent) => posts.find((post) => post.id === parent.postId),
+    author: async (parent) => User.findById(parent.author),
+    post: async (parent) => Post.findById(parent.post),
   },
 };

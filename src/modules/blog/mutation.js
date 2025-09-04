@@ -1,90 +1,127 @@
-import { users, posts, comments } from "./dataSource.js";
-import jwt from "jsonwebtoken"
+import jwt from "jsonwebtoken";
+import { Post } from "../../models/postModel.js";
+import { User } from "../../models/userModel.js";
+import { Comment } from "../../models/commentModel.js";
+
+
 export const blogMutationResolvers = {
+  // Update user details
   updateUser: async (_, { id, name, email }) => {
-    
-    await new Promise(res => setTimeout(res, 2000)); // simulate delay
-    
-    const user = users.find((u) => u.id === id);
+    await new Promise((res) => setTimeout(res, 2000)); // simulate delay
 
-    if (name) user.name = name;
-    if (email) user.email = email;
-    return user;
+    const updatedUser = await User.findByIdAndUpdate(
+      id,
+      { $set: { name, email } },
+      { new: true } // return updated doc
+    );
+
+    if (!updatedUser) {
+      throw new Error(`User with id ${id} not found`);
+    }
+
+    return updatedUser;
   },
 
-  deleteComment: (_, { id }) => {
-    const index = comments.findIndex((c) => c.id === id);
-    
-    return comments.splice(index, 1)[0];
+  //  Delete comment
+  deleteComment: async (_, { id }) => {
+    const deletedComment = await Comment.findByIdAndDelete(id);
+    if (!deletedComment) {
+      throw new Error(`Comment with id ${id} not found`);
+    }
+    return deletedComment;
   },
 
-  addPost: (_, { title, content, authorId }, context) => {
-    console.log(context.user);
+  // Add new post (requires auth)
+  addPost: async (_, { title, content }, context) => {
     if (!context.user) {
       throw new Error("Authentication required");
     }
-    const newPost = {
-      id: Math.floor(Math.random()*1000+1).toString(),
+    const finduser = await User.findById(context.user.id);
+    
+    if (finduser.role !== "admin") {
+      throw new Error("Only admins can add posts");
+    }
+    const newPost = new Post({
       title,
       content,
-      authorId: context.user.id
-    };
-    posts.push(newPost);
+      author: context.user.id,
+    });
+
+    await newPost.save();
     return newPost;
   },
 
-  addComment: (_, { text, postId, authorId },{pubsub}) => {
-    const newComment = {
-      id: Math.floor(Math.random()*1000+1).toString(),
+  //  Add comment (with pubsub)
+  addComment: async (_, { text, postId }, { pubsub, user }) => {
+    if (!user) throw new Error("Authentication required");
+
+    const post = await Post.findById(postId);
+    if (!post) throw new Error(`Post with id ${postId} not found`);
+
+    const newComment = new Comment({
       text,
-      postId,
-      authorId
-    };
-    comments.push(newComment);
+      post: postId,
+      author: user.id,
+    });
+
+    await newComment.save();
+
     pubsub.publish("COMMENT_POSTED", {
-      commentPosted: newComment
+      commentPosted: newComment,
     });
 
     return newComment;
   },
 
-   register: (_, { name, email, password }) => {
-    const newUser = {
-      id: Math.floor(Math.random() * 1000 + 1).toString(),
+  // Register new user
+  register: async (_, { name, email, password }) => {
+    const existingUser = await User.findOne({ email });
+    if (existingUser) throw new Error("Email already registered");
+
+    const newUser = new User({
       name,
       email,
-      password,
-    };
-    users.push(newUser);
+      password, 
+    });
+
+    await newUser.save();
     return newUser;
   },
-  login: (_, { email, password }, { pubsub }) => {
-    const user = users.find((u) => u.email === email && u.password === password);
+   // Login user + JWT
+  login: async (_, { email, password }, { pubsub }) => {
+    const user = await User.findOne({ email, password });
     if (!user) throw new Error("Invalid credentials");
 
-    // set presence
+    // mark as online
     user.isOnline = true;
+    await user.save();
 
-    // publish event for subscriptions
+    // notify subscribers
     pubsub.publish("USER_PRESENCE_CHANGED", {
       userPresenceChanged: user,
     });
-    const token=jwt.sign({ id: user.id, email: user.email }, "secretkey", {
-        expiresIn: "1h",
-      })
+
+    const token = jwt.sign(
+      { id: user._id, email: user.email },
+      "secretkey",
+      { expiresIn: "1h" }
+    );
+
     return {
       token,
       user,
     };
   },
- logout: (_, __, { pubsub,user }) => {
-  console.log(user);
+
+  // Logout user
+  logout: async (_, __, { pubsub, user }) => {
     if (!user) throw new Error("Not authenticated");
 
-    const existingUser = users.find((u) => u.id === user.id);
+    const existingUser = await User.findById(user.id);
     if (!existingUser) throw new Error("User not found");
 
     existingUser.isOnline = false;
+    await existingUser.save();
 
     // publish event for subscriptions
     pubsub.publish("USER_PRESENCE_CHANGED", {
